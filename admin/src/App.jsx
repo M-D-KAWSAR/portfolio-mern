@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import ProjectsPage from './pages/ProjectsPage';
 import SkillsPage from './pages/SkillsPage';
+import CVBuilderPage from './pages/CVBuilderPage';
 
 function Layout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/skills" element={<SkillsPage />} />
+                <Route path="/cv-builder" element={<CVBuilderPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

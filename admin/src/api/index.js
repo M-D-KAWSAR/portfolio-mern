@@ -43,4 +43,8 @@ export const createSkill = (data) => api.post('/skills', data).then((r) => r.dat
 export const updateSkill = (id, data) => api.put(`/skills/${id}`, data).then((r) => r.data);
 export const deleteSkill = (id) => api.delete(`/skills/${id}`).then((r) => r.data);
 
+// CV Config
+export const getCVConfig = () => api.get('/cv-config').then((r) => r.data);
+export const saveCVConfig = (data) => api.put('/cv-config', data).then((r) => r.data);
+
 export default api;

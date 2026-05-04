@@ -62,7 +62,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <Navbar profile={profile} />
-      <Hero profile={profile} />
+      <Hero profile={profile} skills={skills} projects={projects} />
       <About profile={profile} />
       <Skills skills={skills} />
       <Projects projects={projects} />

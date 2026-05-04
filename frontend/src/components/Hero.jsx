@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { fetchCVConfig } from '../api';
+import { getTemplate } from './cv-templates';
 
 function useTyping(texts, speed = 90) {
   const [display, setDisplay] = useState('');
@@ -44,11 +46,82 @@ function useTyping(texts, speed = 90) {
   return display;
 }
 
-export default function Hero({ profile }) {
+export default function Hero({ profile, skills = [], projects = [] }) {
   const typedText = useTyping(profile?.titles);
+  const cvRef = useRef(null);
+  const cvWrapperRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+  const [cvConfig, setCvConfig] = useState(null);
+
+  useEffect(() => {
+    fetchCVConfig().then(setCvConfig).catch(() => {});
+  }, []);
+
+  const TemplateComponent = getTemplate(cvConfig?.templateId || 'classic');
 
   const scrollTo = (id) =>
     document.querySelector(id)?.scrollIntoView({ behavior: 'smooth' });
+
+  const handleDownloadCV = async () => {
+    const wrapper = cvWrapperRef.current;
+    const target = cvRef.current;
+    if (!wrapper || !target) return;
+    setDownloading(true);
+
+    // Temporarily reveal element so html2canvas can capture it
+    const saved = { position: wrapper.style.position, left: wrapper.style.left, top: wrapper.style.top, visibility: wrapper.style.visibility, zIndex: wrapper.style.zIndex };
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '0px';
+    wrapper.style.top = '0px';
+    wrapper.style.visibility = 'visible';
+    wrapper.style.zIndex = '99999';
+
+    try {
+      await new Promise((r) => setTimeout(r, 80));
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      const canvas = await html2canvas(target, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 794,
+        windowWidth: 794,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`CV_${profile?.name?.replace(/\s+/g, '_') || 'Portfolio'}.pdf`);
+    } catch (err) {
+      console.error('CV generation failed:', err);
+    } finally {
+      Object.assign(wrapper.style, saved);
+      setDownloading(false);
+    }
+  };
+
+  // Use published CV data from admin if available, else fall back to portfolio data
+  const cvData = cvConfig?.cvData?.name
+    ? cvConfig.cvData
+    : {
+        name: profile?.name || '',
+        title: profile?.titles?.[0] || '',
+        email: profile?.email || '',
+        phone: '',
+        location: profile?.location || '',
+        linkedin: profile?.linkedin || '',
+        github: profile?.github || '',
+        profileImage: profile?.profileImage || '',
+        summary: profile?.bio || profile?.shortBio || '',
+        education: [],
+        experience: [],
+        skills: skills.map((s) => ({ name: s.name, category: s.category })),
+        projects: projects.map((p) => ({ title: p.title, description: p.description, techStack: p.techStack || [] })),
+      };
 
   return (
     <section
@@ -101,6 +174,27 @@ export default function Hero({ profile }) {
               <button onClick={() => scrollTo('#contact')} className="btn-outline">
                 Get in Touch
               </button>
+              <button
+                onClick={handleDownloadCV}
+                disabled={downloading}
+                className="btn-outline"
+              >
+                {downloading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Generating…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download CV
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Socials */}
@@ -148,15 +242,10 @@ export default function Hero({ profile }) {
           {/* Avatar */}
           <div className="flex justify-center order-1 md:order-2 animate-fade-up" style={{ animationDelay: '0.2s' }}>
             <div className="relative">
-              {/* Outer rotating ring */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-cyan-400 via-blue-500 to-violet-600 animate-spin-slow p-0.5">
                 <div className="w-full h-full rounded-full bg-navy-900" />
               </div>
-
-              {/* Glow */}
               <div className="absolute inset-4 rounded-full bg-gradient-to-br from-cyan-500/30 to-violet-600/30 blur-xl" />
-
-              {/* Image */}
               <div className="relative w-56 h-56 sm:w-72 sm:h-72 rounded-full overflow-hidden border-2 border-white/10 animate-float">
                 {profile?.profileImage ? (
                   <img
@@ -172,8 +261,6 @@ export default function Hero({ profile }) {
                   </div>
                 )}
               </div>
-
-              {/* Badge */}
               {profile?.location && (
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 glass rounded-full px-4 py-1.5 text-xs font-medium text-slate-300 flex items-center gap-1.5 whitespace-nowrap border border-white/10">
                   <span>📍</span> {profile.location}
@@ -187,6 +274,16 @@ export default function Hero({ profile }) {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600">
           <span className="text-xs tracking-widest uppercase">Scroll</span>
           <div className="w-px h-10 bg-gradient-to-b from-slate-600 to-transparent" />
+        </div>
+      </div>
+
+      {/* Off-screen CV for PDF capture — visibility toggled programmatically */}
+      <div
+        ref={cvWrapperRef}
+        style={{ position: 'fixed', left: '-9999px', top: '0px', visibility: 'hidden', pointerEvents: 'none', zIndex: -1 }}
+      >
+        <div ref={cvRef}>
+          <TemplateComponent cvData={cvData} />
         </div>
       </div>
     </section>
