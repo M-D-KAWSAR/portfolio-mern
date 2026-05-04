@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-navy-900 text-slate-100 font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse at 15% 40%, rgba(0, 212, 255, 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 60%, rgba(124, 58, 237, 0.07) 0%, transparent 55%);
+    background-attachment: fixed;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-navy-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-500;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/[0.04] backdrop-blur-md border border-white/[0.08];
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/[0.07] hover:border-white/[0.14] transition-all duration-300;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-500 bg-clip-text text-transparent;
+  }
+
+  .section-heading {
+    @apply font-display font-bold text-3xl md:text-4xl;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm
+           bg-gradient-to-r from-cyan-500 to-violet-600
+           hover:from-cyan-400 hover:to-violet-500
+           shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30
+           transition-all duration-300 text-white;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm
+           border border-white/20 hover:border-cyan-400/50 text-slate-300 hover:text-white
+           hover:bg-white/5 transition-all duration-300;
+  }
+
+  .skill-bar-fill {
+    @apply h-full rounded-full bg-gradient-to-r from-cyan-500 to-violet-600 transition-all duration-1000 ease-out;
+  }
+
+  .tag {
+    @apply text-xs font-medium px-2.5 py-1 rounded-full
+           bg-cyan-500/10 text-cyan-400 border border-cyan-500/20;
+  }
+
+  .section-divider {
+    @apply relative py-20 md:py-28;
+  }
+
+  .section-divider::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.02] to-transparent;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+  }
+
+  .card-glow {
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-glow-hover {
+    box-shadow: 0 0 60px rgba(0, 212, 255, 0.1), 0 16px 48px rgba(0, 0, 0, 0.4);
+  }
+}
