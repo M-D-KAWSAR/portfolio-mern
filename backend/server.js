@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const projectRoutes = require('./routes/projects');
 const skillRoutes = require('./routes/skills');
+const cvConfigRoutes = require('./routes/cvConfig');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/skills', skillRoutes);
+app.use('/api/cv-config', cvConfigRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', message: 'Portfolio API running' }));
 
