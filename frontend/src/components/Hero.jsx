@@ -67,34 +67,23 @@ export default function Hero({ profile, skills = [], projects = [] }) {
     const target = cvRef.current;
     if (!wrapper || !target) return;
     setDownloading(true);
-
-    // Temporarily reveal element so html2canvas can capture it
     const saved = { position: wrapper.style.position, left: wrapper.style.left, top: wrapper.style.top, visibility: wrapper.style.visibility, zIndex: wrapper.style.zIndex };
     wrapper.style.position = 'fixed';
     wrapper.style.left = '0px';
     wrapper.style.top = '0px';
     wrapper.style.visibility = 'visible';
     wrapper.style.zIndex = '99999';
-
     try {
       await new Promise((r) => setTimeout(r, 80));
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
-      const canvas = await html2canvas(target, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        width: 794,
-        windowWidth: 794,
-        logging: false,
-      });
+      const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: 794, windowWidth: 794, logging: false });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, (canvas.height * pdfWidth) / canvas.width);
       pdf.save(`CV_${profile?.name?.replace(/\s+/g, '_') || 'Portfolio'}.pdf`);
     } catch (err) {
       console.error('CV generation failed:', err);
@@ -104,7 +93,6 @@ export default function Hero({ profile, skills = [], projects = [] }) {
     }
   };
 
-  // Use published CV data from admin if available, else fall back to portfolio data
   const cvData = cvConfig?.cvData?.name
     ? cvConfig.cvData
     : {
@@ -174,11 +162,7 @@ export default function Hero({ profile, skills = [], projects = [] }) {
               <button onClick={() => scrollTo('#contact')} className="btn-outline">
                 Get in Touch
               </button>
-              <button
-                onClick={handleDownloadCV}
-                disabled={downloading}
-                className="btn-outline"
-              >
+              <button onClick={handleDownloadCV} disabled={downloading} className="btn-outline">
                 {downloading ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,11 +261,8 @@ export default function Hero({ profile, skills = [], projects = [] }) {
         </div>
       </div>
 
-      {/* Off-screen CV for PDF capture — visibility toggled programmatically */}
-      <div
-        ref={cvWrapperRef}
-        style={{ position: 'fixed', left: '-9999px', top: '0px', visibility: 'hidden', pointerEvents: 'none', zIndex: -1 }}
-      >
+      {/* Off-screen CV for PDF capture */}
+      <div ref={cvWrapperRef} style={{ position: 'fixed', left: '-9999px', top: '0px', visibility: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
         <div ref={cvRef}>
           <TemplateComponent cvData={cvData} />
         </div>

@@ -5,11 +5,15 @@ import { TEMPLATES, getTemplate } from '../components/cv-templates';
 const STORAGE_KEY = 'cv_builder_state';
 
 const BLANK_CV = {
-  name: '', title: '', email: '', phone: '', location: '',
-  linkedin: '', github: '', profileImage: '', summary: '',
-  education: [{ degree: '', institution: '', year: '' }],
+  name: '', surname: '', title: '', email: '', phone: '', location: '',
+  website: '', address: '', linkedin: '', github: '', profileImage: '', summary: '',
+  education: [{ degree: '', institution: '', location: '', year: '' }],
   experience: [{ title: '', company: '', period: '', description: '' }],
   skills: [], projects: [],
+  languages: [],
+  references: [],
+  achievements: [],
+  certifications: [],
 };
 
 const inp = 'w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/40 transition-colors';
@@ -107,15 +111,17 @@ export default function CVBuilderPage() {
       setPortfolioProjects(projects);
       setSelectedProjectIds(projects.map(p => p._id));
       setCvData({
-        name: profile.name || '', title: profile.titles?.[0] || '',
+        name: profile.name || '', surname: '', title: profile.titles?.[0] || '',
         email: profile.email || '', phone: '',
-        location: profile.location || '', linkedin: profile.linkedin || '',
-        github: profile.github || '', profileImage: profile.profileImage || '',
+        location: profile.location || '', website: '', address: '',
+        linkedin: profile.linkedin || '', github: profile.github || '',
+        profileImage: profile.profileImage || '',
         summary: profile.bio || profile.shortBio || '',
-        education: [{ degree: '', institution: '', year: '' }],
+        education: [{ degree: '', institution: '', location: '', year: '' }],
         experience: [{ title: '', company: '', period: '', description: '' }],
         skills: skills.map(s => ({ name: s.name, category: s.category })),
         projects: projects.map(p => ({ _id: p._id, title: p.title, description: p.description, techStack: p.techStack || [] })),
+        languages: [], references: [], achievements: [], certifications: [],
       });
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
@@ -134,6 +140,22 @@ export default function CVBuilderPage() {
   const updateExp = (i, f, v) => setCvData(p => { const a=[...p.experience]; a[i]={...a[i],[f]:v}; return {...p,experience:a}; });
   const addExp = () => setCvData(p => ({ ...p, experience:[...p.experience,{title:'',company:'',period:'',description:''}] }));
   const removeExp = i => setCvData(p => ({ ...p, experience:p.experience.filter((_,idx)=>idx!==i) }));
+
+  // Languages
+  const updateLang = (i, f, v) => setCvData(p => { const a=[...p.languages]; a[i]={...a[i],[f]:v}; return {...p,languages:a}; });
+  const addLang    = () => setCvData(p => ({ ...p, languages:[...p.languages,{language:'',proficiency:''}] }));
+  const removeLang = i  => setCvData(p => ({ ...p, languages:p.languages.filter((_,idx)=>idx!==i) }));
+  // References
+  const updateRef = (i, f, v) => setCvData(p => { const a=[...p.references]; a[i]={...a[i],[f]:v}; return {...p,references:a}; });
+  const addRef    = () => setCvData(p => ({ ...p, references:[...p.references,{name:'',position:'',company:'',email:'',phone:''}] }));
+  const removeRef = i  => setCvData(p => ({ ...p, references:p.references.filter((_,idx)=>idx!==i) }));
+  // Achievements (array of strings)
+  const achievementsRaw = (cvData.achievements||[]).map(a => typeof a==='string'?a:a.text||'').join('\n');
+  const updateAchievements = raw => setCvData(p => ({ ...p, achievements: raw.split('\n').filter(Boolean) }));
+  // Certifications
+  const updateCert = (i, f, v) => setCvData(p => { const a=[...(p.certifications||[])]; a[i]={...a[i],[f]:v}; return {...p,certifications:a}; });
+  const addCert    = () => setCvData(p => ({ ...p, certifications:[...(p.certifications||[]),{name:'',issuedBy:'',year:''}] }));
+  const removeCert = i  => setCvData(p => ({ ...p, certifications:(p.certifications||[]).filter((_,idx)=>idx!==i) }));
 
   const updateSkillRaw = raw => {
     const skills = raw.split('\n').map(line => { const [name,category]=line.split('|').map(s=>s.trim()); return name?{name,category:category||'Technical'}:null; }).filter(Boolean);
@@ -255,7 +277,10 @@ export default function CVBuilderPage() {
           {/* Basic Info */}
           <div className="card p-6">
             <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-indigo-400 rounded-full"/>Basic Info</h2>
-            <Field label="Full Name"><input className={inp} value={cvData.name} onChange={e=>update('name',e.target.value)} placeholder="Kawsar Ahmed" /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="First Name"><input className={inp} value={cvData.name} onChange={e=>update('name',e.target.value)} placeholder="Kawsar" /></Field>
+              <Field label="Last Name / Surname"><input className={inp} value={cvData.surname||''} onChange={e=>update('surname',e.target.value)} placeholder="Ahmed" /></Field>
+            </div>
             <Field label="Job Title"><input className={inp} value={cvData.title} onChange={e=>update('title',e.target.value)} placeholder="Full Stack Developer" /></Field>
             <Field label="Profile Photo URL"><input className={inp} value={cvData.profileImage} onChange={e=>update('profileImage',e.target.value)} placeholder="https://..." /></Field>
           </div>
@@ -263,11 +288,19 @@ export default function CVBuilderPage() {
           {/* Contact */}
           <div className="card p-6">
             <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-cyan-400 rounded-full"/>Contact</h2>
-            <Field label="Email"><input className={inp} value={cvData.email} onChange={e=>update('email',e.target.value)} placeholder="you@example.com" /></Field>
-            <Field label="Phone"><input className={inp} value={cvData.phone} onChange={e=>update('phone',e.target.value)} placeholder="+880 1234 567890" /></Field>
-            <Field label="Location"><input className={inp} value={cvData.location} onChange={e=>update('location',e.target.value)} placeholder="Dhaka, Bangladesh" /></Field>
-            <Field label="LinkedIn URL"><input className={inp} value={cvData.linkedin} onChange={e=>update('linkedin',e.target.value)} placeholder="https://linkedin.com/in/..." /></Field>
-            <Field label="GitHub URL"><input className={inp} value={cvData.github} onChange={e=>update('github',e.target.value)} placeholder="https://github.com/..." /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Email"><input className={inp} value={cvData.email} onChange={e=>update('email',e.target.value)} placeholder="you@example.com" /></Field>
+              <Field label="Phone"><input className={inp} value={cvData.phone} onChange={e=>update('phone',e.target.value)} placeholder="+880 1234 567890" /></Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Website"><input className={inp} value={cvData.website||''} onChange={e=>update('website',e.target.value)} placeholder="www.yoursite.com" /></Field>
+              <Field label="Location / City"><input className={inp} value={cvData.location} onChange={e=>update('location',e.target.value)} placeholder="Dhaka, Bangladesh" /></Field>
+            </div>
+            <Field label="Full Address"><input className={inp} value={cvData.address||''} onChange={e=>update('address',e.target.value)} placeholder="123 Street Name, City, Country" /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="LinkedIn URL"><input className={inp} value={cvData.linkedin} onChange={e=>update('linkedin',e.target.value)} placeholder="https://linkedin.com/in/..." /></Field>
+              <Field label="GitHub URL"><input className={inp} value={cvData.github} onChange={e=>update('github',e.target.value)} placeholder="https://github.com/..." /></Field>
+            </div>
           </div>
 
           {/* Summary */}
@@ -286,10 +319,13 @@ export default function CVBuilderPage() {
               <div key={i} className="relative mb-4 bg-slate-800/50 rounded-lg p-4">
                 <button onClick={()=>removeEdu(i)} className="absolute top-3 right-3 text-slate-600 hover:text-red-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <Field label="Degree"><input className={inp} value={edu.degree} onChange={e=>updateEdu(i,'degree',e.target.value)} placeholder="B.Sc. in CSE"/></Field>
+                  <Field label="Degree / Major"><input className={inp} value={edu.degree} onChange={e=>updateEdu(i,'degree',e.target.value)} placeholder="B.Sc. in CSE"/></Field>
                   <Field label="Year"><input className={inp} value={edu.year} onChange={e=>updateEdu(i,'year',e.target.value)} placeholder="2020–2024"/></Field>
                 </div>
-                <Field label="Institution"><input className={inp} value={edu.institution} onChange={e=>updateEdu(i,'institution',e.target.value)} placeholder="University Name"/></Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Institution"><input className={inp} value={edu.institution} onChange={e=>updateEdu(i,'institution',e.target.value)} placeholder="University Name"/></Field>
+                  <Field label="Location"><input className={inp} value={edu.location||''} onChange={e=>updateEdu(i,'location',e.target.value)} placeholder="Dhaka, Bangladesh"/></Field>
+                </div>
               </div>
             ))}
           </div>
@@ -318,6 +354,73 @@ export default function CVBuilderPage() {
             <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-pink-400 rounded-full"/>Skills</h2>
             <p className="text-xs text-slate-500 mb-2">One per line. Format: <code className="text-indigo-400">Skill Name|Category</code></p>
             <textarea className={`${inp} resize-none font-mono`} rows={10} value={skillsRaw} onChange={e=>updateSkillRaw(e.target.value)} placeholder={`Python|AI / Machine Learning\nReact|Web Development\nDocker|Tools`}/>
+          </div>
+
+          {/* Languages */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-teal-400 rounded-full"/>Languages</h2>
+              <button onClick={addLang} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>Add</button>
+            </div>
+            {(cvData.languages||[]).length === 0 && <p className="text-xs text-slate-500">No languages added yet.</p>}
+            {(cvData.languages||[]).map((l,i)=>(
+              <div key={i} className="relative mb-3 bg-slate-800/50 rounded-lg p-3">
+                <button onClick={()=>removeLang(i)} className="absolute top-2 right-2 text-slate-600 hover:text-red-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Language"><input className={inp} value={l.language} onChange={e=>updateLang(i,'language',e.target.value)} placeholder="English"/></Field>
+                  <Field label="Proficiency"><input className={inp} value={l.proficiency} onChange={e=>updateLang(i,'proficiency',e.target.value)} placeholder="Native / Fluent / Basic"/></Field>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* References */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-orange-400 rounded-full"/>References</h2>
+              <button onClick={addRef} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>Add</button>
+            </div>
+            {(cvData.references||[]).length === 0 && <p className="text-xs text-slate-500">No references added yet.</p>}
+            {(cvData.references||[]).map((r,i)=>(
+              <div key={i} className="relative mb-4 bg-slate-800/50 rounded-lg p-4">
+                <button onClick={()=>removeRef(i)} className="absolute top-3 right-3 text-slate-600 hover:text-red-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                  <Field label="Name"><input className={inp} value={r.name} onChange={e=>updateRef(i,'name',e.target.value)} placeholder="Full Name"/></Field>
+                  <Field label="Position"><input className={inp} value={r.position} onChange={e=>updateRef(i,'position',e.target.value)} placeholder="Senior Engineer"/></Field>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-2">
+                  <Field label="Company"><input className={inp} value={r.company} onChange={e=>updateRef(i,'company',e.target.value)} placeholder="Company Name"/></Field>
+                  <Field label="Phone"><input className={inp} value={r.phone} onChange={e=>updateRef(i,'phone',e.target.value)} placeholder="+880 ..."/></Field>
+                </div>
+                <Field label="Email"><input className={inp} value={r.email} onChange={e=>updateRef(i,'email',e.target.value)} placeholder="ref@company.com"/></Field>
+              </div>
+            ))}
+          </div>
+
+          {/* Achievements */}
+          <div className="card p-6">
+            <h2 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-yellow-400 rounded-full"/>Achievements</h2>
+            <p className="text-xs text-slate-500 mb-2">One achievement per line.</p>
+            <textarea className={`${inp} resize-none`} rows={5} value={achievementsRaw} onChange={e=>updateAchievements(e.target.value)} placeholder={"Won national hackathon 2023\nPublished research paper in IEEE\nTop 1% on Codeforces"} />
+          </div>
+
+          {/* Certifications */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-lime-400 rounded-full"/>Certifications</h2>
+              <button onClick={addCert} className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/></svg>Add</button>
+            </div>
+            {(cvData.certifications||[]).length === 0 && <p className="text-xs text-slate-500">No certifications added yet.</p>}
+            {(cvData.certifications||[]).map((c,i)=>(
+              <div key={i} className="relative mb-3 bg-slate-800/50 rounded-lg p-3">
+                <button onClick={()=>removeCert(i)} className="absolute top-2 right-2 text-slate-600 hover:text-red-400"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <Field label="Certificate Name"><input className={inp} value={c.name} onChange={e=>updateCert(i,'name',e.target.value)} placeholder="AWS Certified Developer"/></Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Issued By"><input className={inp} value={c.issuedBy} onChange={e=>updateCert(i,'issuedBy',e.target.value)} placeholder="Amazon / Coursera"/></Field>
+                  <Field label="Year"><input className={inp} value={c.year} onChange={e=>updateCert(i,'year',e.target.value)} placeholder="2024"/></Field>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Projects */}
